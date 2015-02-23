@@ -26,8 +26,8 @@ with open("C:/Users/ejgross/Desktop/ShodanRepo/2014-12-23.json", "rb") as s:
             sql = ""
             counter += 1
 
-            # Reconnecting to the database every 500,000 records
-            if counter % 500000 == 0:
+            # Reconnecting to the database every 750,000 records
+            if counter % 750000 == 0:
                 cur.close()
                 db.close()
                 db = pymysql.connect(host="128.196.27.147",  # your host, usually localhost
@@ -40,12 +40,11 @@ with open("C:/Users/ejgross/Desktop/ShodanRepo/2014-12-23.json", "rb") as s:
                 cur = db.cursor()
                 
             # used to skip the front "counter" records
-            if counter < 1024345:
+            if counter < 1500000:
                 print ("Record {0} skipped".format(counter))
                 continue
 
             try:
-                #d = ijson.parse(open(txt, encoding="utf-8"))
                 d = json.loads(str(s, 'utf-8'))
                 asn = str_replace(d["asn"]) if "asn" in d else None
                 data = str_replace(d["data"]) if "data" in d else None
@@ -94,8 +93,6 @@ with open("C:/Users/ejgross/Desktop/ShodanRepo/2014-12-23.json", "rb") as s:
                 sql += string
 
                 print(counter)
-                # if counter % 2 == 0:
-                    # print(sql)
 
                 cur.execute(sql)
             except pymysql.err.IntegrityError as err:

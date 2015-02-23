@@ -26,6 +26,19 @@ with open("C:/Users/ejgross/Desktop/ShodanRepo/2014-12-23.json", "rb") as s:
             sql = ""
             counter += 1
 
+            # Reconnecting to the database every 500,000 records
+            if counter % 500000 == 0:
+                cur.close()
+                db.close()
+                db = pymysql.connect(host="128.196.27.147",  # your host, usually localhost
+                                     user="ShodanTeam",  # your username
+                                     passwd="Sh0d@n7e",  # your password
+                                     db="shodan",
+                                     charset='utf8',
+                                     autocommit=True)  # name of the data base
+
+                cur = db.cursor()
+                
             # used to skip the front "counter" records
             if counter < 1024345:
                 print ("Record {0} skipped".format(counter))

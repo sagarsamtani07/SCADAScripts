@@ -6,23 +6,19 @@ def str_replace(s):
 
 db = pymysql.connect(host="128.196.27.147", # your host, usually localhost
                      user="ShodanTeam", # your username
-                    passwd="Sh0d@n7e", # your password
+                     passwd="Sh0d@n7e", # your password
                      db="shodan",
                      charset='utf8',
-                      autocommit=True)# name of the data base
+                     autocommit=True)# name of the data base
 
 cur = db.cursor()
 
 sql = ""
 counter = 0
 
-log = open("C:/Users/ejgross/Desktop/log.txt", "w+")
-
-with open("C:/Users/ejgross/Desktop/ShodanRepo/2014-12-23.json", "rb") as s:
-
-    for line in s:
-        for s in s:
-
+with open("C:/Users/ejgross/Desktop/ShodanRepo/2014-12-23.json", "rb") as src:
+    with open("C:/Users/ejgross/Desktop/log.txt", "w+") as log:
+        for s in src:
             sql = ""
             counter += 1
 
@@ -81,12 +77,19 @@ with open("C:/Users/ejgross/Desktop/ShodanRepo/2014-12-23.json", "rb") as s:
                 html = str_replace(d["html"]) if "html" in d else None
 
                 string = """INSERT INTO `shodan`.`shodan_2014_12_13`
-                 (`asn` ,`data`,`ip`,`ip_str`,`port`,`timestamp`,`hostnames`,`domains`,`area_code`,`city`,`country_code`,
-                `country_code3`,`country_name`,`dma_code`,`latitude`,`longitude`,`postal_code`,`region_code`,`opts`,
-                `org`,`isp`,`os`,`uptime`,`link`,`product`,`version`,`devicetype`,`info`,
-                `cpe`, `html`)
-                VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s');""" %(asn,
-                data, ip, ip_str, port, timestamp, hostnames, domains, area_code, city, country_code, country_code3, country_name, dma_code, latitude, longitude, postal_code, region_code, opts, org, isp, os, uptime, link, product, version, devicetype, info, cpe, html)
+                (`asn` ,`data`,`ip`,`ip_str`,`port`,`timestamp`,`hostnames`,`domains`,
+                 `area_code`,`city`,`country_code`,`country_code3`,`country_name`,`dma_code`,`latitude`,`longitude`,
+                 `postal_code`,`region_code`,`opts`,`org`,`isp`,`os`,`uptime`,`link`,
+                 `product`,`version`,`devicetype`,`info`,`cpe`,`html`)
+                VALUES
+                ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s',
+                 '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s',
+                 '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s',
+                 '%s', '%s', '%s', '%s', '%s', '%s');""" %\
+                         (asn, data, ip, ip_str, port, timestamp, hostnames, domains,
+                          area_code, city, country_code, country_code3, country_name, dma_code, latitude, longitude,
+                          postal_code, region_code, opts, org, isp, os, uptime, link,
+                          product, version, devicetype, info, cpe, html)
 
                 string = string.replace("'None'", "null")
 

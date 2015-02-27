@@ -43,12 +43,13 @@ gram = ["", "", ""]
 # record_num_scada, record_num_non: The number of records that will be read from the db
 
 top_n = 30
-port_device_threshold = 10
+port_device_threshold = 0
+scada_specific_top_n = 100
 log_scada = "C:/log_scada.txt"
 log_non = "C:/log_non.txt"
 log_compare = "C:/log_compare.txt"
-record_num_scada = 10000
-record_num_non = 10000
+record_num_scada = 100000
+record_num_non = 100000
 
 # this list contains 3 empty dicts for overall n-gram stats: [0]: gram[0] (aka uni), [1]: gram[1], [2]: gram[2]
 # each dict contains a set of {word: count} pairs
@@ -79,9 +80,13 @@ LIMIT 0, 1000
 cur.execute(sql1)
 
 for row in cur:
+    portnum = str(row[0])
     for ngram_port_dict in ngram_port_dicts_scada:
-        ngram_port_dict[str(row[0])] = {}
-    port_count_scada[str(row[0])] = 0
+        ngram_port_dict[portnum] = {}
+    for ngram_port_dict in ngram_port_dicts_non:
+        ngram_port_dict[portnum] = {}
+    port_count_non[portnum] = 0
+    port_count_scada[portnum] = 0
 
 print("len(ngram_port_dicts_scada[0]) = {0}".format(len(ngram_port_dicts_scada[0])))
 
@@ -93,10 +98,13 @@ LIMIT 0, 1000
 cur.execute(sql1b)
 
 for row in cur:
+    portnum = str(row[0])
+    for ngram_port_dict in ngram_port_dicts_scada:
+        ngram_port_dict[portnum] = {}
     for ngram_port_dict in ngram_port_dicts_non:
-        ngram_port_dict[str(row[0])] = {}
-    port_count_non[str(row[0])] = 0
-
+        ngram_port_dict[portnum] = {}
+    port_count_non[portnum] = 0
+    port_count_scada[portnum] = 0
 ## </port_info>
 
 
@@ -109,6 +117,7 @@ LIMIT 0, %d
 """ % record_num_scada
 cur.execute(sql2)
 
+# Tokenizing
 for row in cur:
     port = str(row[0])
     dict_inc(port_count_scada, port)
@@ -123,52 +132,59 @@ for row in cur:
         if len(s) != 0:
             newlst.append(s.lower())
 
+    # this list contains all the grams in the data field. E.g., ["http", "1", "1"]
     lenlst = len(newlst)
 
+    # Summarizing the occurrences for each unigram, bigram and trigram
     for i in range(lenlst):
         gram[0] = newlst[i]
+        dict_inc(ngram_dicts_scada[0], gram[0])
+        dict_inc(ngram_port_dicts_scada[0][port], gram[0])
         if i + 1 < lenlst:
             gram[1] = "".join((gram[0], "_", newlst[i + 1]))
+            dict_inc(ngram_dicts_scada[1], gram[1])
+            dict_inc(ngram_port_dicts_scada[1][port], gram[1])
         if i + 2 < lenlst:
             gram[2] = "".join((gram[1], "_", newlst[i + 2]))
-        dict_inc(ngram_dicts_scada[0], gram[0])
-        dict_inc(ngram_dicts_scada[1], gram[1])
-        dict_inc(ngram_dicts_scada[2], gram[2])
-        dict_inc(ngram_port_dicts_scada[0][port], gram[0])
-        dict_inc(ngram_port_dicts_scada[1][port], gram[1])
-        dict_inc(ngram_port_dicts_scada[2][port], gram[2])
+            dict_inc(ngram_dicts_scada[2], gram[2])
+            dict_inc(ngram_port_dicts_scada[2][port], gram[2])
 
 log = open(log_scada, "w")
 
 # provides overall statistics
-sorted_list = [None, None, None]
+# each element in sorted_list_scada is a list, containing tuples converted from ngram_dicts_scada, desc.
+# sample of each element: [("1", 9000), ("http", 8500)]
+sorted_list_scada = [None, None, None]
 for i in range(3):
-    sorted_list[i] = sorted(ngram_dicts_scada[i].items(), key=operator.itemgetter(1))
+    sorted_list_scada[i] = sorted(ngram_dicts_scada[i].items(), key=operator.itemgetter(1))
+    sorted_list_scada[i].reverse()
 
 for i in range(3):
-    sorted_dict = sorted_list[i]
+    sorted_dict = sorted_list_scada[i]
     log.write("======== Overall {0}-gram statistics ========\n".format(i + 1))
     for j in range(top_n if len(sorted_dict) > top_n else len(sorted_dict)):
-        tup = sorted_dict[-(j + 1)]
+        tup = sorted_dict[j]
         log.write("\t{0}: {1}\n".format(tup[0], tup[1]))
     log.write("\n")
 log.write("\n")
 
 # provides port-specific statistics
-sorted_port_list = [None, None, None]
+sorted_port_list_scada = [None, None, None]
 for i in range(3):
-    sorted_port_list[i] = sorted(ngram_port_dicts_scada[i].items(), key=operator.itemgetter(0))
+    sorted_port_list_scada[i] = sorted(ngram_port_dicts_scada[i].items(), key=operator.itemgetter(0))
 
 for i in range(3):
-    sorted_port = sorted_port_list[i]
+    # sorted_port = [("21", {"ftp": 8000, "0": 7500}), ("80", {"http": 9000, "1": 8500})]
+    sorted_port = sorted_port_list_scada[i]
     log.write("======== Port-specific {0}-gram statistics ========\n".format(i + 1))
-    for key, item in sorted_port:
+    for port, item in sorted_port:
         # if the number of devices using a specific port is less than port_device_threshold, it will be ignored
-        if port_count_scada[key] > port_device_threshold:
-            log.write("Port {0}: {1} devices\n".format(key, port_count_scada[key]))
+        if port_count_scada[port] > port_device_threshold:
+            log.write("Port {0}: {1} devices\n".format(port, port_count_scada[port]))
             sorted_item = sorted(item.items(), key=operator.itemgetter(1))
+            sorted_item.reverse()
             for j in range(top_n if len(item) > top_n else len(item)):
-                tup = sorted_item[-(j + 1)]
+                tup = sorted_item[j]
                 log.write("\t{0}: {1}\n".format(tup[0], tup[1]))
 log.close()
 
@@ -214,35 +230,121 @@ for row in cur:
 log = open(log_non, "w")
 
 # provides overall statistics
-sorted_list = [None, None, None]
+sorted_list_non = [None, None, None]
 for i in range(3):
-    sorted_list[i] = sorted(ngram_dicts_non[i].items(), key=operator.itemgetter(1))
+    sorted_list_non[i] = sorted(ngram_dicts_non[i].items(), key=operator.itemgetter(1))
+    sorted_list_non[i].reverse()
 
 for i in range(3):
-    sorted_dict = sorted_list[i]
+    sorted_dict = sorted_list_non[i]
     log.write("======== Overall {0}-gram statistics ========\n".format(i + 1))
     for j in range(top_n if len(sorted_dict) > top_n else len(sorted_dict)):
-        tup = sorted_dict[-(j + 1)]
+        tup = sorted_dict[j]
         log.write("\t{0}: {1}\n".format(tup[0], tup[1]))
     log.write("\n")
 log.write("\n")
 
 # provides port-specific statistics
-sorted_port_list = [None, None, None]
+sorted_port_list_non = [None, None, None]
 for i in range(3):
-    sorted_port_list[i] = sorted(ngram_port_dicts_non[i].items(), key=operator.itemgetter(0))
+    sorted_port_list_non[i] = sorted(ngram_port_dicts_non[i].items(), key=operator.itemgetter(0))
 
 for i in range(3):
-    sorted_port = sorted_port_list[i]
+    # sorted_port = [("21", {"ftp": 8000, "0": 7500}), ("80", {"http": 9000, "1": 8500})]
+    sorted_port = sorted_port_list_non[i]
     log.write("======== Port-specific {0}-gram statistics ========\n".format(i + 1))
-    for key, item in sorted_port:
+    for port, item in sorted_port:
         # if the number of devices using a specific port is less than port_device_threshold, it will be ignored
-        if port_count_non[key] > port_device_threshold:
-            log.write("Port {0}: {1} devices\n".format(key, port_count_non[key]))
+        if port_count_non[port] > port_device_threshold:
+            log.write("Port {0}: {1} devices\n".format(port, port_count_non[port]))
             sorted_item = sorted(item.items(), key=operator.itemgetter(1))
+            sorted_item.reverse()
             for j in range(top_n if len(item) > top_n else len(item)):
-                tup = sorted_item[-(j + 1)]
+                tup = sorted_item[j]
                 log.write("\t{0}: {1}\n".format(tup[0], tup[1]))
 log.close()
 
 
+# ================ FOR COMPARISON BETWEEN SCADA AND NON-SCADA DEVICES =================
+
+log = open(log_compare, "w")
+
+freq_scada = [None, None, None]
+freq_non = [None, None, None]
+freq_scada_only_dicts = [{}, {}, {}]
+
+for i in range(3):
+    freq_scada[i] = sorted_list_scada[i][:scada_specific_top_n]
+    freq_non[i] = sorted_list_non[i][:scada_specific_top_n]
+    freq_scada_only_dicts[i] = {}
+
+    temp_list = [j[0] for j in freq_non[i]]
+    for gram in [j[0] for j in freq_scada[i]]:
+        if gram not in temp_list:
+            freq_scada_only_dicts[i][gram] = ngram_dicts_scada[i][gram]
+
+sorted_freq_scada_only_list = [None, None, None]
+
+for i in range(3):
+    sorted_freq_scada_only_list[i] = sorted(freq_scada_only_dicts[i].items(), key=operator.itemgetter(1))
+    sorted_freq_scada_only_list[i].reverse()
+
+for i in range(3):
+    sorted_freq_scada_only = sorted_freq_scada_only_list[i]
+    log.write("======== Overall scada-only {0}-gram statistics ========\n".format(i + 1))
+    for key, item in sorted_freq_scada_only:
+        log.write("\t{0}: {1}\n".format(key, item))
+    log.write("\n")
+
+# port-specific
+freq_scada_port = [{}, {}, {}]
+freq_non_port = [{}, {}, {}]
+freq_scada_only_dicts_port = [{}, {}, {}]
+
+for i in range(3):
+    # temp_dict = {"80": {"http": 8000, "1": 7500}, "21": {"ftp": 7500}}
+    for port in ngram_port_dicts_scada[i].keys():
+        # port_dict = {"http": 8000, "1": 7500}
+        # port_dict_list = [("http", 8000), ("1", 7500)]
+        temp_list = sorted(ngram_port_dicts_scada[i][port].items(), key=operator.itemgetter(1))
+        temp_list.reverse()
+        freq_scada_port[i][port] = temp_list[:]
+
+for i in range(3):
+    # temp_dict = {"80": {"http": 8000}, "21": {"ftp": 7500}}
+    for port in ngram_port_dicts_non[i].keys():
+        # port_dict_list = [("http", 8000)]
+        temp_list = sorted(ngram_port_dicts_non[i][port].items(), key=operator.itemgetter(1))
+        temp_list.reverse()
+        freq_non_port[i][port] = temp_list[:]
+
+for i in range(3):
+    for port in freq_scada_port[i].keys():
+        freq_port_scada_list = freq_scada_port[i][port][:scada_specific_top_n]
+        freq_port_non_list = freq_non_port[i][port][:scada_specific_top_n]
+        freq_scada_only_dicts_port[i][port] = {}
+
+        temp_list = [j[0] for j in freq_port_non_list]
+        for term in [j[0] for j in freq_port_scada_list]:
+            if term not in temp_list:
+                freq_scada_only_dicts_port[i][port][term] =\
+                    ngram_port_dicts_scada[i][port][term]
+
+sorted_freq_port_scada_only_list = [None, None, None]
+
+for i in range(3):
+    sorted_freq_port_scada_only_list[i] = sorted(freq_scada_only_dicts_port[i].items(), key=operator.itemgetter(0))
+
+for i in range(3):
+    sorted_freq_port_scada_only = sorted_freq_port_scada_only_list[i]
+    log.write("======== Port-specific scada-only {0}-gram statistics ========\n".format(i + 1))
+    for port, port_dict in sorted_freq_port_scada_only:
+        log.write("Port {0}, with {1} scada devices and {2} non-scada devices\n".format(
+            port, port_count_scada[port], port_count_non[port]
+        ))
+        sorted_port_list = sorted(port_dict.items(), key=operator.itemgetter(1))
+        sorted_port_list.reverse()
+        for key, value in sorted_port_list:
+            log.write("\t{0}: {1}\n".format(key, value))
+        log.write("\n")
+log.close()

@@ -81,7 +81,7 @@ with open("C:/Users/ejgross/Desktop/ShodanRepo/2014-12-23.json", "rb") as src:
                 cpe = str_replace(d["cpe"]) if "cpe" in d else None
                 html = str_replace(d["html"]) if "html" in d else None
 
-                string = """INSERT INTO `shodan`.`shodan_2014_12_13`
+                string = """INSERT INTO `shodan`.`sample_shodan_2014_12_13`
                 (`asn` ,`data`,`ip`,`ip_str`,`port`,`timestamp`,`hostnames`,`domains`,
                  `area_code`,`city`,`country_code`,`country_code3`,`country_name`,`dma_code`,`latitude`,`longitude`,
                  `postal_code`,`region_code`,`opts`,`org`,`isp`,`os`,`uptime`,`link`,

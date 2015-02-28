@@ -4,6 +4,7 @@ __author__ = 'Shuo Yu'
 # It further analyzes the occurrences for each unigram, bigram and trigram.
 # Current version deals with scada/non-scada devices, providing overall and port-specific n-grams statistic.
 # Output txt file paths can be configured in scada_log and non_log.
+# Results are inserted into db using insert_into_database flag.
 # Current alphanumeric characters include ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789. Other characters are discarded.
 # Stopwords are not used in this version.
 
@@ -42,6 +43,7 @@ gram = ["", "", ""]
 # port_device_threshold: The threshold for the minimum number of devices for a particular port
 # record_num_scada, record_num_non: The number of records that will be read from the db
 
+insert_into_database = True
 top_n = 30
 port_device_threshold = 0
 scada_specific_top_n = 100
@@ -267,6 +269,16 @@ log.close()
 
 # ================ FOR COMPARISON BETWEEN SCADA AND NON-SCADA DEVICES =================
 
+port_count_sql = """
+INSERT INTO sy_device_port_count (port, scada, nonscada)
+VALUES ('%s', '%s', '%s')
+"""
+
+ngrams_sql = """
+INSERT INTO sy_scada_port_ngrams (port, type, word, count)
+VALUES ('%s', '%s', '%s', '%s')
+"""
+
 log = open(log_compare, "w")
 
 freq_scada = [None, None, None]
@@ -292,8 +304,13 @@ for i in range(3):
 for i in range(3):
     sorted_freq_scada_only = sorted_freq_scada_only_list[i]
     log.write("======== Overall scada-only {0}-gram statistics ========\n".format(i + 1))
-    for key, item in sorted_freq_scada_only:
+    for key, value in sorted_freq_scada_only:
         log.write("\t{0}: {1}\n".format(key, item))
+        if insert_into_database:
+            try:
+                cur.execute(ngrams_sql % (-1, (i+1), key, value))
+            except:
+                pass
     log.write("\n")
 
 # port-specific
@@ -342,9 +359,20 @@ for i in range(3):
         log.write("Port {0}, with {1} scada devices and {2} non-scada devices\n".format(
             port, port_count_scada[port], port_count_non[port]
         ))
+        if insert_into_database:
+            try:
+                cur.execute(port_count_sql % (port, port_count_scada[port], port_count_non[port]))
+            except:
+                pass
+
         sorted_port_list = sorted(port_dict.items(), key=operator.itemgetter(1))
         sorted_port_list.reverse()
         for key, value in sorted_port_list:
             log.write("\t{0}: {1}\n".format(key, value))
+            if insert_into_database:
+                try:
+                    cur.execute(ngrams_sql % (port, (i+1), key, value))
+                except:
+                    pass
         log.write("\n")
 log.close()

@@ -26,6 +26,7 @@ def db_connect():
 record_num_scada = 100000
 maxnum = 10000
 num_gram = 100
+skip_factor = 3
 
 cur = db_connect()
 cur_write = db_connect()
@@ -46,9 +47,11 @@ for row in cur:
     scada_count[row[0]] = row[1]
     nonscada_count[row[0]] = row[2]
 
+# Using sy_scada_port_grams_2_3, not the entire one
+
 sql = """
 SELECT port, type, word, count
-FROM shodan.sy_scada_port_ngrams
+FROM shodan.sy_scada_port_ngrams_2_3
 ORDER BY count DESC
 LIMIT 0, %d
 """ % maxnum
@@ -68,22 +71,36 @@ for row in cur:
 
 
 sql2 = """
-INSERT INTO sy_features (searchID, is_scada, port, length, num_grams,
+INSERT INTO sy_trainset (searchID, is_scada, port, length, num_grams,
                          num_gen_uni_top100, num_gen_bi_top100, num_gen_tri_top100,
                          num_port_uni_top100, num_port_bi_top100, num_port_tri_top100)
 VALUES
                         ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')
 """
 
+sql3 = """
+INSERT INTO sy_testset (searchID, is_scada, port, length, num_grams,
+                         num_gen_uni_top100, num_gen_bi_top100, num_gen_tri_top100,
+                         num_port_uni_top100, num_port_bi_top100, num_port_tri_top100)
+VALUES
+                        ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')
+"""
 
 sql = """
 SELECT searchID, portnum, devicedata
-FROM shodan.nonscadashodan
+FROM shodan.scadashodan
 LIMIT 0, %d
 """ % record_num_scada
 cur.execute(sql)
 
+counter = 0
 for row in cur:
+    counter += 1
+
+    # use record No. skip_factor, ... , skip_factor * n for test
+    if skip_factor != 0 and counter % skip_factor != 0:
+        continue
+
     id = row[0]
     port = row[1]
     data = row[2]
@@ -130,7 +147,75 @@ for row in cur:
 
     # write n-gram features for each record to db
     try:
-        cur_write.execute(sql2 % (id, 0, port, lenstr, lenlst,
+        cur_write.execute(sql3 % (id, 1, port, lenstr, lenlst,
+                          gen_gram_count[0], gen_gram_count[1], gen_gram_count[2],
+                          port_gram_count[0], port_gram_count[1], port_gram_count[2]
+        ))
+    except Exception as err:
+        print(err)
+
+sql = """
+SELECT searchID, portnum, devicedata
+FROM shodan.nonscadashodan
+LIMIT 0, %d
+""" % record_num_scada
+cur.execute(sql)
+
+counter = 0
+for row in cur:
+    counter += 1
+
+    # use record No. skip_factor, ... , skip_factor * n for test
+    if skip_factor != 0 and counter % skip_factor != 0:
+        continue
+
+    id = row[0]
+    port = row[1]
+    data = row[2]
+
+    lst = []
+    newlst = []
+
+    lst = sep.split(data)
+    for s in lst:
+        if len(s) != 0:
+            newlst.append(s.lower())
+
+    lenstr = len(data)
+    lenlst = len(newlst)
+
+    gram = [None, None, None]
+    gen_gram_count = [0, 0, 0]
+    port_gram_count = [0, 0, 0]
+
+    # summarize occurrence for each gram in the top-n lists
+    for i in range(lenlst):
+        gram[0] = newlst[i]
+        if gram[0] in ngram_dict[-1][0]:
+            gen_gram_count[0] += 1
+        if port in ngram_dict.keys():
+            if gram[0] in ngram_dict[port][0]:
+                port_gram_count[0] += 1
+
+        if i + 1 < lenlst:
+            gram[1] = "".join((gram[0], "_", newlst[i + 1]))
+            if gram[1] in ngram_dict[-1][1]:
+                gen_gram_count[1] += 1
+            if port in ngram_dict.keys():
+                if gram[1] in ngram_dict[port][1]:
+                    port_gram_count[1] += 1
+
+        if i + 2 < lenlst:
+            gram[2] = "".join((gram[1], "_", newlst[i + 2]))
+            if gram[2] in ngram_dict[-1][2]:
+                gen_gram_count[2] += 1
+            if port in ngram_dict.keys():
+                if gram[2] in ngram_dict[port][2]:
+                    port_gram_count[2] += 1
+
+    # write n-gram features for each record to db
+    try:
+        cur_write.execute(sql3 % (id, 0, port, lenstr, lenlst,
                           gen_gram_count[0], gen_gram_count[1], gen_gram_count[2],
                           port_gram_count[0], port_gram_count[1], port_gram_count[2]
         ))

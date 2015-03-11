@@ -46,7 +46,9 @@ gram = ["", "", ""]
 insert_into_database = True
 top_n = 30
 port_device_threshold = 0
-scada_specific_top_n = 100
+scada_specific_top_n = 1000
+scada_specific_port_top_n = 100
+rule_out_threshold = 20
 log_scada = "C:/log_scada.txt"
 log_non = "C:/log_non.txt"
 log_compare = "C:/log_compare.txt"
@@ -55,8 +57,9 @@ record_num_non = 100000
 
 # setting skip_factor to 0 will prevent the script from skipping
 # db_suffix is used to use a different db
+stratified_sampling = True
 skip_factor = 3
-db_suffix = "_2_3"
+db_suffix = "_2_3" if stratified_sampling else ""
 
 # this list contains 3 empty dicts for overall n-gram stats: [0]: gram[0] (aka uni), [1]: gram[1], [2]: gram[2]
 # each dict contains a set of {word: count} pairs
@@ -101,6 +104,10 @@ sql1b = """
 SELECT DISTINCT portnum
 FROM shodan.nonscadashodan
 LIMIT 0, 1000
+UNION
+SELECT DISTINCT portnum
+FROM shodan.nonscadashodanmore
+LIMIT 0, 1000
 """
 cur.execute(sql1b)
 
@@ -130,8 +137,9 @@ for row in cur:
     counter += 1
 
     # reserve record No. skip_factor, ... , skip_factor * n for test
-    if skip_factor != 0 and counter % skip_factor == 0:
-        continue
+    if stratified_sampling:
+        if skip_factor != 0 and counter % skip_factor == 0:
+            continue
 
     port = str(row[0])
     dict_inc(port_count_scada, port)
@@ -163,6 +171,16 @@ for row in cur:
             dict_inc(ngram_dicts_scada[2], gram[2])
             dict_inc(ngram_port_dicts_scada[2][port], gram[2])
 
+# eliminate those ports with too low occurrence (less than the rule-out-threshold)
+
+for port in port_count_scada:
+    if port_count_scada[port] < 20:
+        for i in range(3):
+            # port_count_scada.pop(port)
+            ngram_port_dicts_scada[i][port] = {}
+
+
+
 log = open(log_scada, "w")
 
 # provides overall statistics
@@ -175,7 +193,7 @@ for i in range(3):
 
 for i in range(3):
     sorted_dict = sorted_list_scada[i]
-    log.write("======== Overall {0}-gram statistics ========\n".format(i + 1))
+    log.write("======== Overall {0}-gram statistics, {1} words========\n".format(i + 1, len(sorted_dict)))
     for j in range(top_n if len(sorted_dict) > top_n else len(sorted_dict)):
         tup = sorted_dict[j]
         log.write("\t{0}: {1}\n".format(tup[0], tup[1]))
@@ -190,17 +208,19 @@ for i in range(3):
 for i in range(3):
     # sorted_port = [("21", {"ftp": 8000, "0": 7500}), ("80", {"http": 9000, "1": 8500})]
     sorted_port = sorted_port_list_scada[i]
-    log.write("======== Port-specific {0}-gram statistics ========\n".format(i + 1))
+    log.write("======== Port-specific {0}-gram statistics========\n".format(i + 1))
     for port, item in sorted_port:
         # if the number of devices using a specific port is less than port_device_threshold, it will be ignored
         if port_count_scada[port] > port_device_threshold:
-            log.write("Port {0}: {1} devices\n".format(port, port_count_scada[port]))
             sorted_item = sorted(item.items(), key=operator.itemgetter(1))
             sorted_item.reverse()
+            log.write("Port {0}: {1} devices, {2} words\n".format(port, port_count_scada[port], len(sorted_item)))
+
             for j in range(top_n if len(item) > top_n else len(item)):
                 tup = sorted_item[j]
                 log.write("\t{0}: {1}\n".format(tup[0], tup[1]))
 log.close()
+
 
 
 # ================ FOR NON-SCADA DEVICES =================
@@ -209,15 +229,20 @@ sql2b = """
 SELECT portnum, devicedata
 FROM shodan.nonscadashodan
 LIMIT 0, %d
-""" % record_num_non
+UNION
+SELECT portnum, devicedata
+FROM shodan.nonscadashodanmore
+LIMIT 0, %d
+""" % (record_num_non, record_num_non)
 cur.execute(sql2b)
 
 counter = 0
 for row in cur:
     counter += 1
     # reserve record No. skip_factor, ... , skip_factor * n for test
-    if skip_factor != 0 and counter % skip_factor == 0:
-        continue
+    if stratified_sampling:
+        if skip_factor != 0 and counter % skip_factor == 0:
+            continue
 
     port = str(row[0])
     dict_inc(port_count_non, port)
@@ -247,6 +272,14 @@ for row in cur:
         dict_inc(ngram_port_dicts_non[1][port], gram[1])
         dict_inc(ngram_port_dicts_non[2][port], gram[2])
 
+# eliminate those ports with too low occurrence (less than the rule-out-threshold)
+
+for port in port_count_non:
+    if port_count_non[port] < 20:
+        for i in range(3):
+            # port_count_non.pop(port)
+            ngram_port_dicts_non[i][port] = {}
+
 log = open(log_non, "w")
 
 # provides overall statistics
@@ -257,7 +290,7 @@ for i in range(3):
 
 for i in range(3):
     sorted_dict = sorted_list_non[i]
-    log.write("======== Overall {0}-gram statistics ========\n".format(i + 1))
+    log.write("======== Overall {0}-gram statistics, {1} words ========\n".format(i + 1, len(sorted_dict)))
     for j in range(top_n if len(sorted_dict) > top_n else len(sorted_dict)):
         tup = sorted_dict[j]
         log.write("\t{0}: {1}\n".format(tup[0], tup[1]))
@@ -272,13 +305,13 @@ for i in range(3):
 for i in range(3):
     # sorted_port = [("21", {"ftp": 8000, "0": 7500}), ("80", {"http": 9000, "1": 8500})]
     sorted_port = sorted_port_list_non[i]
-    log.write("======== Port-specific {0}-gram statistics ========\n".format(i + 1))
+    log.write("======== Port-specific {0}-gram statistics========\n".format(i + 1))
     for port, item in sorted_port:
         # if the number of devices using a specific port is less than port_device_threshold, it will be ignored
         if port_count_non[port] > port_device_threshold:
-            log.write("Port {0}: {1} devices\n".format(port, port_count_non[port]))
             sorted_item = sorted(item.items(), key=operator.itemgetter(1))
             sorted_item.reverse()
+            log.write("Port {0}: {1} devices, {2} words\n".format(port, port_count_non[port], len(sorted_item)))
             for j in range(top_n if len(item) > top_n else len(item)):
                 tup = sorted_item[j]
                 log.write("\t{0}: {1}\n".format(tup[0], tup[1]))
@@ -293,12 +326,12 @@ VALUES ('%s', '%s', '%s')
 """
 
 ngrams_sql = """
-INSERT INTO sy_scada_port_ngrams{0} (port, type, word, count)
+INSERT INTO sy_scada_port_ngrams_extended_filtered_1k{0} (port, type, word, count)
 VALUES ('%s', '%s', '%s', '%s')
 """.format(db_suffix)
 
 ngrams_non_sql = """
-INSERT INTO sy_nonscada_port_ngrams{0} (port, type, word, count)
+INSERT INTO sy_nonscada_port_ngrams_extended_filtered_1k{0} (port, type, word, count)
 VALUES ('%s', '%s', '%s', '%s')
 """.format(db_suffix)
 
@@ -337,9 +370,9 @@ for i in range(3):
 
 for i in range(3):
     sorted_freq_scada_only = sorted_freq_scada_only_list[i]
-    log.write("======== Overall scada-only {0}-gram statistics ========\n".format(i + 1))
+    log.write("======== Overall scada-only {0}-gram statistics, {1} words ========\n".format(i + 1, len(sorted_freq_scada_only)))
     for key, value in sorted_freq_scada_only:
-        log.write("\t{0}: {1}\n".format(key, item))
+        log.write("\t{0}: {1}\n".format(key, value))
         if insert_into_database:
             try:
                 cur.execute(ngrams_sql % (-1, (i+1), key, value))
@@ -349,9 +382,9 @@ for i in range(3):
 
 for i in range(3):
     sorted_freq_non_only = sorted_freq_non_only_list[i]
-    log.write("======== Overall nonscada-only {0}-gram statistics ========\n".format(i + 1))
+    log.write("======== Overall nonscada-only {0}-gram statistics, {1} words ========\n".format(i + 1, len(sorted_freq_non_only)))
     for key, value in sorted_freq_non_only:
-        log.write("\t{0}: {1}\n".format(key, item))
+        log.write("\t{0}: {1}\n".format(key, value))
         if insert_into_database:
             try:
                 cur.execute(ngrams_non_sql % (-1, (i+1), key, value))
@@ -385,8 +418,8 @@ for i in range(3):
 
 for i in range(3):
     for port in freq_scada_port[i].keys():
-        freq_port_scada_list = freq_scada_port[i][port][:scada_specific_top_n]
-        freq_port_non_list = freq_non_port[i][port][:scada_specific_top_n]
+        freq_port_scada_list = freq_scada_port[i][port][:scada_specific_port_top_n]
+        freq_port_non_list = freq_non_port[i][port][:scada_specific_port_top_n]
         freq_scada_only_dicts_port[i][port] = {}
         freq_non_only_dicts_port[i][port] = {}
 
@@ -411,19 +444,22 @@ for i in range(3):
 
 for i in range(3):
     sorted_freq_port_scada_only = sorted_freq_port_scada_only_list[i]
-    log.write("======== Port-specific scada-only {0}-gram statistics ========\n".format(i + 1))
+    log.write("======== Port-specific scada-only {0}-gram statistics========\n".format(i + 1))
     for port, port_dict in sorted_freq_port_scada_only:
-        log.write("Port {0}, with {1} scada devices and {2} non-scada devices\n".format(
-            port, port_count_scada[port], port_count_non[port]
+
+        sorted_port_list = sorted(port_dict.items(), key=operator.itemgetter(1))
+        sorted_port_list.reverse()
+
+        log.write("Port {0}, with {1} scada devices and {2} non-scada devices, {3} words\n".format(
+            port, port_count_scada[port], port_count_non[port], len(sorted_port_list)
         ))
+
         if insert_into_database:
             try:
                 cur.execute(port_count_sql % (port, port_count_scada[port], port_count_non[port]))
             except:
                 pass
 
-        sorted_port_list = sorted(port_dict.items(), key=operator.itemgetter(1))
-        sorted_port_list.reverse()
         for key, value in sorted_port_list:
             log.write("\t{0}: {1}\n".format(key, value))
             if insert_into_database:
@@ -433,15 +469,17 @@ for i in range(3):
                     pass
         log.write("\n")
 
-    log.write("======== Port-specific nonscada-only {0}-gram statistics ========\n".format(i + 1))
     sorted_freq_port_non_only = sorted_freq_port_non_only_list[i]
-    for port, port_dict in sorted_freq_port_non_only:
-        log.write("Port {0}, with {1} scada devices and {2} non-scada devices\n".format(
-            port, port_count_scada[port], port_count_non[port]
-        ))
+    log.write("======== Port-specific nonscada-only {0}-gram statistics, {1} words ========\n".format(i + 1, len(sorted_freq_port_non_only)))
 
+    for port, port_dict in sorted_freq_port_non_only:
         sorted_port_list = sorted(port_dict.items(), key=operator.itemgetter(1))
         sorted_port_list.reverse()
+
+        log.write("Port {0}, with {1} scada devices and {2} non-scada devices, {3} words\n".format(
+            port, port_count_scada[port], port_count_non[port], len(sorted_port_list)
+        ))
+
         for key, value in sorted_port_list:
             log.write("\t{0}: {1}\n".format(key, value))
             if insert_into_database:

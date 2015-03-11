@@ -23,11 +23,11 @@ def db_connect():
                            charset='utf8',
                            autocommit=True).cursor()
 
-record_num_scada = 100000
+record_num_scada = 1000000
 maxnum = 100000
 num_gen_gram = 1000
 num_port_gram = 100
-skip_factor = 3
+skip_factor = 0
 
 cur = db_connect()
 cur_write = db_connect()
@@ -101,7 +101,7 @@ for row in cur:
 
 
 sql3 = """
-INSERT INTO sy_filtered_trainset_1k_2_3 (searchID, is_scada, port, length, num_grams,
+INSERT INTO sy_filtered_testset_external4_1k_2_3 (searchID, is_scada, port, length, num_grams,
                          num_gen_uni_top100, num_gen_bi_top100, num_gen_tri_top100,
                          num_port_uni_top100, num_port_bi_top100, num_port_tri_top100,
                          num_non_gen_uni_top100, num_non_gen_bi_top100, num_non_gen_tri_top100,
@@ -113,14 +113,13 @@ VALUES
 
 # choose the records in scadashodan, extract features and insert into sy_testset
 sql = """
-SELECT searchID, portnum, devicedata
-FROM shodan.scadashodan
+SELECT ID, port, data
+FROM shodan.sample4_shodan_2014_12_13
 LIMIT 0, %d
 """ % record_num_scada
 cur.execute(sql)
 
 counter = 0
-print("Begin scadashodan")
 for row in cur:
     counter += 1
 
@@ -229,9 +228,11 @@ for row in cur:
                 gram[2] = "".join((gram[1], "_", newlst[i + 2]))
                 if gram[2] in ngram_non_dict[-1][2]:
                     non_gen_gram_count[2] += 1
+    if counter % 10000 == 0:
+        print(counter)
     # write n-gram features for each record to db
     try:
-        cur_write.execute(sql3 % (id, 1, port, lenstr, lenlst,
+        cur_write.execute(sql3 % (id, -1, port, lenstr, lenlst,
                           gen_gram_count[0], gen_gram_count[1], gen_gram_count[2],
                           port_gram_count[0], port_gram_count[1], port_gram_count[2],
                           non_gen_gram_count[0], non_gen_gram_count[1], non_gen_gram_count[2],
@@ -239,138 +240,4 @@ for row in cur:
         ))
     except Exception as err:
         print("{0}: {1}".format(err, id))
-
-
-
-# choose the records in nonscadashodan, extract features and insert into sy_testset
-sql = """
-SELECT searchID, portnum, devicedata
-FROM shodan.nonscadashodan
-LIMIT 0, %d
-UNION
-SELECT searchID, portnum, devicedata
-FROM shodan.nonscadashodanmore
-LIMIT 0, %d
-""" % (record_num_scada, record_num_scada)
-cur.execute(sql)
-
-print("Begin nonscadashodan")
-counter = 0
-for row in cur:
-    counter += 1
-
-    # use record No. skip_factor, ... , skip_factor * n for test
-    if skip_factor != 0 and counter % skip_factor == 0:
-        continue
-
-    id = row[0]
-    port = int(row[1])
-    data = row[2]
-
-    lst = []
-    newlst = []
-
-    lst = sep.split(data)
-    for s in lst:
-        if len(s) != 0:
-            newlst.append(s.lower())
-
-    lenstr = len(data)
-    lenlst = len(newlst)
-
-    gram = [None, None, None]
-    gen_gram_count = [0, 0, 0]
-    port_gram_count = [0, 0, 0]
-    non_gen_gram_count = [0, 0, 0]
-    non_port_gram_count = [0, 0, 0]
-
-    # summarize occurrence for each gram in the top-n lists
-    # summarize occurrence for each gram in the top-n lists
-    # if one port does not exist in our list, denote it as "-1".
-    # "-1" should be handled and converted into "?" in the arff file.
-    if int(port) in ngram_dict.keys():
-        for i in range(lenlst):
-            gram[0] = newlst[i]
-            if gram[0] in ngram_dict[-1][0]:
-                gen_gram_count[0] += 1
-            if gram[0] in ngram_dict[port][0]:
-                port_gram_count[0] += 1
-
-            if i + 1 < lenlst:
-                gram[1] = "".join((gram[0], "_", newlst[i + 1]))
-                if gram[1] in ngram_dict[-1][1]:
-                    gen_gram_count[1] += 1
-                if gram[1] in ngram_dict[port][1]:
-                    port_gram_count[1] += 1
-
-            if i + 2 < lenlst:
-                gram[2] = "".join((gram[1], "_", newlst[i + 2]))
-                if gram[2] in ngram_dict[-1][2]:
-                    gen_gram_count[2] += 1
-                if gram[2] in ngram_dict[port][2]:
-                    port_gram_count[2] += 1
-    else: # the port does not exist in the list, set port_gram_count to -1
-        for i in range(3):
-            port_gram_count[i] = -1
-        for i in range(lenlst):
-            gram[0] = newlst[i]
-            if gram[0] in ngram_dict[-1][0]:
-                gen_gram_count[0] += 1
-
-            if i + 1 < lenlst:
-                gram[1] = "".join((gram[0], "_", newlst[i + 1]))
-                if gram[1] in ngram_dict[-1][1]:
-                    gen_gram_count[1] += 1
-
-            if i + 2 < lenlst:
-                gram[2] = "".join((gram[1], "_", newlst[i + 2]))
-                if gram[2] in ngram_dict[-1][2]:
-                    gen_gram_count[2] += 1
-    if int(port) in ngram_non_dict.keys():
-        for i in range(lenlst):
-            gram[0] = newlst[i]
-            if gram[0] in ngram_non_dict[-1][0]:
-                non_gen_gram_count[0] += 1
-            if gram[0] in ngram_non_dict[port][0]:
-                non_port_gram_count[0] += 1
-
-            if i + 1 < lenlst:
-                gram[1] = "".join((gram[0], "_", newlst[i + 1]))
-                if gram[1] in ngram_non_dict[-1][1]:
-                    non_gen_gram_count[1] += 1
-                if gram[1] in ngram_non_dict[port][1]:
-                    non_port_gram_count[1] += 1
-
-            if i + 2 < lenlst:
-                gram[2] = "".join((gram[1], "_", newlst[i + 2]))
-                if gram[2] in ngram_non_dict[-1][2]:
-                    non_gen_gram_count[2] += 1
-                if gram[2] in ngram_non_dict[port][2]:
-                    non_port_gram_count[2] += 1
-    else: # the port does not exist in the list, set non_port_gram_count to -1
-        for i in range(3):
-            non_port_gram_count[i] = -1
-        for i in range(lenlst):
-            gram[0] = newlst[i]
-            if gram[0] in ngram_non_dict[-1][0]:
-                non_gen_gram_count[0] += 1
-
-            if i + 1 < lenlst:
-                gram[1] = "".join((gram[0], "_", newlst[i + 1]))
-                if gram[1] in ngram_non_dict[-1][1]:
-                    non_gen_gram_count[1] += 1
-
-            if i + 2 < lenlst:
-                gram[2] = "".join((gram[1], "_", newlst[i + 2]))
-                if gram[2] in ngram_non_dict[-1][2]:
-                    non_gen_gram_count[2] += 1
-    # write n-gram features for each record to db
-    try:
-        cur_write.execute(sql3 % (id, 0, port, lenstr, lenlst,
-                          gen_gram_count[0], gen_gram_count[1], gen_gram_count[2],
-                          port_gram_count[0], port_gram_count[1], port_gram_count[2],
-                          non_gen_gram_count[0], non_gen_gram_count[1], non_gen_gram_count[2],
-                          non_port_gram_count[0], non_port_gram_count[1], non_port_gram_count[2]
-        ))
-    except Exception as err:
         print("At counter {0}, id {1}, err: {2}".format(counter, id, err))

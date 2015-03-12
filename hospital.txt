@@ -2883,8 +2883,7 @@ Plaza Specialty Hospital	http://www.plazaspecialtyhospital.com/	8.192.172.142
 Red Bud Regional Hospital	http://www.redbudregional.com/	67.192.244.118
 Marian Clinic	http://www.marianclinic.org/	66.96.130.10
 Stonewall Jackson Memorial Hospital	http://www.stonewalljacksonhospital.com/	12.150.248.39
-Chicago LASIK and Cataract Surgery Specialist
-Dr Stuart Sondheimer	http://www.drsondheimer.com/	192.186.223.8
+Chicago LASIK and Cataract Surgery Specialist Dr Stuart Sondheimer	http://www.drsondheimer.com/	192.186.223.8
 Eastar Healthcare System (Muskogee Regional Medical Center)	http://www.eastarhealth.com/	199.204.137.196
 Rc Hospital & Clinics	http://www.rchospital.com/	76.12.135.103
 Dekalb Health	http://www.dekalbhealth.com/	70.32.85.134

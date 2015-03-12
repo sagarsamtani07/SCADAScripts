@@ -1,0 +1,16 @@
+C:\Python34\python.exe "C:/Users/Hongyi/Documents/GitHub/ShodanCode/Grab Hospital List.py"
+
+Parkview Community Hospital's webpage http://pchmc.org/ is not accessible
+San Dimas Community Hospital's webpage http://www.sandimashospital.com/ is not accessible
+Wishard Health Services's webpage http://www.wishard.edu/ is not accessible
+Norton Sound Health Corporation's webpage http://www.nortonsoundhealth.org/ is not accessible
+Eastern Cooperative Oncology Group's webpage http://ecog.dfci.harvard.edu/ is not accessible
+Rowan Regional Medical Center's webpage http://www.rowan.org/ is not accessible
+Sulphur Springs Vision Center & Eye Clinic's webpage http://www.ssvcec.com/ is not accessible
+CHRISTUS St Catherine Hospital's webpage http://www.christusstcatherine.org/ is not accessible
+CHRISTUS St John Hospital's webpage http://www.christusstjohn.org/ is not accessible
+Inter Lakes Health Moses Ludington Hospital's webpage http://www.mosesludington.com/ is not accessible
+Lakewood Eye Clinic's webpage http://www.lakewoodeyeclinic.com/ is not accessible
+Adult and Pediatric Urology Sartell Minnesota's webpage http://www.apumn.com/ is not accessible
+
+Process finished with exit code 0

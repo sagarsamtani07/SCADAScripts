@@ -15,17 +15,25 @@ def db_connection():
                                 charset='utf8',
                                 autocommit=True).cursor()  # name of the data base
 
-f = open("sample.json")
 cur = db_connection()
 
+# Hongyi's API: Used up
+# api_id = "id17657"
+# api_key = "753573301-739817362-1975251929"
+
+# Sagar's API: Used up
+# api_id = "id17704"
+# api_key = "1810016131-841994778-423714404"
+
+# Shuo's API
+api_id = "id17706"
+api_key = "1610597678-1954412878-1994905298"
 api_url = "http://api.myip.ms"
-api_id = "id17657"
-api_key = "753573301-739817362-1975251929"
 
 query = """
     SELECT DISTINCT hospitalip
     FROM hospital_data
-    LIMIT 0, 150;
+    LIMIT 300, 150;
     """
 cur.execute(query)
 rs = cur.fetchall()
@@ -39,6 +47,16 @@ for record in rs:
         .format(api_url, ip, api_id, api_key, signature, timestamp)
     print(url)
 
-for line in f.readlines():
-    jstr = json.loads(line)
-    print(json.dumps(jstr, indent=4, sort_keys=True))
+    str = urlopen(url).read().decode('utf-8')
+    jsonstr = json.loads(str)
+
+    json_file = open("myip_json/" + ip + ".json", "w")
+    json_file.write(json.dumps(jsonstr, indent=4, sort_keys=True))
+    json_file.close()
+
+    time.sleep(2)
+
+#
+# file = raw_json.readline()
+# jsonstr = json.loads(file)
+# print(json.dumps(jsonstr))

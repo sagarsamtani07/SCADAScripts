@@ -22,7 +22,7 @@ def ip_range_generator(cidr):
     ip, power = cidr.split("/")
     ip1, ip2, ip3, ip4 = ip.split(".")
     ip_int = int(ip4) + int(ip3) * 256 + int(ip2) * 65536 + int(ip1) * 2 ** 24
-    ip_int = ip_int // (32 - int(power)) * (32 - int(power))
+    ip_int = ip_int // (2 ** (32 - int(power))) * (2 ** (32 - int(power)))
     def reconstruct_ip(ip_int):
         ip_addr = []
         for i in range(4):
@@ -37,10 +37,13 @@ def ip_range_generator(cidr):
     return output_list
 
 
-api_key = 'taRFETcxyjbQQEAUmyJ1WAyzwhALCq3a'
+api_key_shuo = 'taRFETcxyjbQQEAUmyJ1WAyzwhALCq3a'
+api_key_eric = 'qlNmFUhpentjJ2DdRaK8XlAavpf4Kvkq'
+
+api_key = api_key_shuo
 
 api = shodan.Shodan(api_key)
-cidr_list = ['192.35.79.0/24']
+cidr_list = ['66.162.22.128/25', '162.129.0.0/16', '129.176.0.0/16', '143.111.0.0/16']
 
 cur = db_connect()
 counter = 0
@@ -48,6 +51,11 @@ counter = 0
 log = open('c:/log_hospital.txt', 'w')
 
 for cidr in cidr_list:
+    # result_list = api.search('net:' + cidr)
+    # total = result_list['total']
+    # for i in range(total / 100 + 1):
+    #     result_list = api.search('net:' + cidr, page=i+1)
+    #     for item in result_list['matches']:
     for ip in ip_range_generator(cidr):
         try:
             # Lookup the host

@@ -25,15 +25,31 @@ cur = db_connection()
 # api_id = "id17704"
 # api_key = "1810016131-841994778-423714404"
 
-# Shuo's API
-api_id = "id17706"
-api_key = "1610597678-1954412878-1994905298"
+# Shuo's API: Used up
+# api_id = "id17706"
+# api_key = "1610597678-1954412878-1994905298"
+
+# Sagar's API 2: Used up
+# api_id = "id17873"
+# api_key = "1884986588-1043917337-218347093"
+
+# Shuo's API 2: Used up
+# api_id = "id17874"
+# api_key = "1930053096-59693597-80284299"
+
+# Hongyi's API 2: Used up
+# api_id = "id17875"
+# api_key = "1554773148-1266496742-2034997215"
+
+api_id = ""
+api_key = ""
+
 api_url = "http://api.myip.ms"
 
 query = """
     SELECT DISTINCT hospitalip
     FROM hospital_data
-    LIMIT 300, 150;
+    LIMIT 750, 150;
     """
 cur.execute(query)
 rs = cur.fetchall()

@@ -41,15 +41,20 @@ cur = db_connection()
 # api_id = "id17875"
 # api_key = "1554773148-1266496742-2034997215"
 
-api_id = ""
-api_key = ""
+# Samantha's API: Unfortunately Wasted :(
+# api_id = "id17877"
+# api_key = "915862348-165079643-957050812"
+
+# Hongyi's API3: Used up
+api_id = "id17895"
+api_key = "1060943727-1394130379-1020573296"
 
 api_url = "http://api.myip.ms"
 
 query = """
     SELECT DISTINCT hospitalip
     FROM hospital_data
-    LIMIT 750, 150;
+    LIMIT 900, 150;
     """
 cur.execute(query)
 rs = cur.fetchall()

@@ -24,8 +24,9 @@ ns = {'scap-core': "http://scap.nist.gov/schema/scap-core/0.1",
       'cpe-lang': "http://cpe.mitre.org/language/2.0",
       'ns': "http://scap.nist.gov/schema/feed/vulnerability/2.0"}
 
-tree = eTree.parse("nvdcve-2.0-2013.xml")
-log = open("xml.log", "w")
+filename = "nvdcve-2.0-2014"
+tree = eTree.parse("C://NVD/" + filename + ".xml")
+log = open(filename + ".log", "w")
 
 root = tree.getroot()
 entries = tree.findall('ns:entry', ns)
@@ -84,16 +85,18 @@ for entry in entries:
 
     for item in product_list:
         sql = """
-        INSERT INTO `shodan`.`nvdcve` (
+        INSERT INTO `nvddb`.`nvdvuln` (
         `cvd_id`, `vendor`, `product`, `version`, `patch`, `platform`, `score`
         ) VALUES (
         '%s', '%s', '%s', '%s', '%s', '%s', '%s'
         );""" % (cve_id, item[0], item[1], item[2], item[3], item[4], cvss_score)
 
-        sql = sql.replace("'None'", "null")
+        # sql = sql.replace("'None'", "null")
 
         try:
             cur.execute(sql)
         except Exception as err:
-            log.write(err + "\n")
+            log.write(cve_id + "\t" + str(err) + "\n")
             log.flush()
+
+    print(cve_id + "\tClear!")

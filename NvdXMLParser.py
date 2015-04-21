@@ -39,6 +39,7 @@ for entry in entries:
         cvss = entry.findall('vuln:cvss', ns)[0]
     except IndexError:
         log.write(cve_id + "\tNo Score\n")
+        log.flush()
         continue
     base_metrics = cvss.findall('cvss:base_metrics', ns)[0]
     cvss_score = base_metrics.findall('cvss:score', ns)[0].text
@@ -49,6 +50,7 @@ for entry in entries:
         products = entry.findall('vuln:vulnerable-software-list', ns)[0]
     except IndexError:
         log.write(cve_id + "\tNo Product\n")
+        log.flush()
         continue
 
     for product in products:
@@ -90,4 +92,8 @@ for entry in entries:
 
         sql = sql.replace("'None'", "null")
 
-        cur.execute(sql)
+        try:
+            cur.execute(sql)
+        except Exception as err:
+            log.write(err + "\n")
+            log.flush()

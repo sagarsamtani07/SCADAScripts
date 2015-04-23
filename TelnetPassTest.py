@@ -7,7 +7,7 @@ import MySQLdb
 import urllib
 import json
 
-db = MySQLdb.connect("128.196.27.147","user","pass", "shodan")
+db = MySQLdb.connect("128.196.27.147","ShodanTeam","Sh0d@n7e", "shodan")
 
 def connectTor():
     socks.setdefaultproxy(socks.PROXY_TYPE_SOCKS5, "127.0.0.1", 9050, True)
@@ -22,8 +22,6 @@ def connectTor():
         sql = "SELECT * FROM allshodan  \
                WHERE (nicknm = 'traffic cam') AND portnum = 23"
 
-        sql = "SELECT * FROM allshodan  \
-               WHERE (nicknm = 'traffic cam') AND portnum = 23"
             # % (keyword, keyword, keyword, keyword, keyword)
         try:
             # Execute the SQL command
@@ -73,7 +71,7 @@ def connectTor():
                                 strline = strline.replace('\'','')
                                 line = strline
 
-                                if ("login" in line) or ("user" in line) or ("password" in line) or ("username" in line):
+                                if ("login" in line) or ("user" in line) or ("password" in line):
                                     try:
                                         #print passID
                                         #Username is also sometimes a option sometimes there is only a password

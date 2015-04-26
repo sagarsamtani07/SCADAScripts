@@ -5,7 +5,7 @@ import pymysql
 
 
 def str_replace(s):
-    return str(s).replace("_", "_")
+    return str(s).replace("_", "_").replace("-","").replace("None","")
 
 shodandb = pymysql.connect(host="128.196.27.147",  # your host, usually localhost
                      user="ShodanTeam",  # your username
@@ -35,15 +35,15 @@ try:
         
     with nvddb.cursor() as cursornv:
         # Read all records from NVD DB
-        sql = "SELECT `cvd_id`,`vendor`, `product`, `version`, `Score` FROM `nvdvuln` where CHAR_LENGTH(product) > 4"
+        sql = "SELECT `cvd_id`,`vendor`, `product`, `version`, `Score` FROM `nvdvuln` where `cvd_id` like '%2015%' or `cvd_id` like '%2014%' or `cvd_id` like '%2013%' or `cvd_id` like '%2012%' and CHAR_LENGTH(product) > 4"
         cursornv.execute(sql)
         result = cursornv.fetchall()
         
         for r in result:
             cvid = r["cvd_id"]
-            vendor = str_replace(r["vendor"])
-            product = str_replace(r["product"])
-            version = r["version"]
+            vendor = r["vendor"]
+            product = r["product"]
+            version = str_replace(r["version"])
             score = r["Score"]
             
             datatest = "%" + product + "%" + version + "%"

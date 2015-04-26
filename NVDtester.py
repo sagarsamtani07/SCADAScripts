@@ -4,6 +4,9 @@
 import pymysql
 
 
+def str_replace(s):
+    return str(s).replace("_").replace(" ")
+
 shodandb = pymysql.connect(host="128.196.27.147",  # your host, usually localhost
                      user="ShodanTeam",  # your username
                      passwd="Sh0d@n7e",  # your password
@@ -37,8 +40,8 @@ try:
         result = cursornv.fetchall()
         for r in result:
             cvid = r["cvd_id"]
-            vendor = r["vendor"]
-            product = r["product"]
+            vendor = str_replace(r["vendor"])
+            product = str_replace(r["product"])
             version = r["version"]
             score = r["Score"]
             

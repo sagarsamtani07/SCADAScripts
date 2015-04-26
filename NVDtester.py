@@ -5,7 +5,7 @@ import pymysql
 
 
 def str_replace(s):
-    return str(s).replace("_", " ")
+    return str(s).replace("_", "_")
 
 shodandb = pymysql.connect(host="128.196.27.147",  # your host, usually localhost
                      user="ShodanTeam",  # your username
@@ -35,7 +35,7 @@ try:
         
     with nvddb.cursor() as cursornv:
         # Read all records from NVD DB
-        sql = "SELECT `cvd_id`,`vendor`, `product`, `version`, `Score` FROM `nvdvuln`"
+        sql = "SELECT `cvd_id`,`vendor`, `product`, `version`, `Score` FROM `nvdvuln` where CHAR_LENGTH(product) > 4"
         cursornv.execute(sql)
         result = cursornv.fetchall()
         
@@ -67,8 +67,8 @@ try:
                     try:
                         with vulnerablesystems.cursor() as cursorvs:
                             # Create a new record in Vulnerable systems
-                            sql = "INSERT INTO `nvdvuln` (`ShodanID`, `ipaddr`, `CVE-ID`, `Score`) VALUES (%s, %s, %s, %s)"
-                            cursorvs.execute(sql, (ShodanID, ip_str, cvid, score))
+                            sql = "INSERT INTO `nvdvuln` (`ShodanID`, `ipaddr`, `CVE-ID`, `vendor`,`product`,`version`, `score`) VALUES (%s, %s, %s, %s, %s, %s, %s)"
+                            cursorvs.execute(sql, (ShodanID, ip_str, cvid, vendor, product, version, score))
                         print("Vulnerable system found!")
                     except: 
                         print('duplicate entry: rollback')

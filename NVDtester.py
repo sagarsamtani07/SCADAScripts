@@ -4,13 +4,13 @@
 import pymysql
 
 
-#shodandb = pymysql.connect(host="128.196.27.147",  # your host, usually localhost
-#                     user="ShodanTeam",  # your username
-#                     passwd="Sh0d@n7e",  # your password
-#                     db="shodan",
-#                     charset='utf8',
-#                     cursorclass=pymysql.cursors.DictCursor,
-#                     autocommit=True)  # name of the data base
+shodandb = pymysql.connect(host="128.196.27.147",  # your host, usually localhost
+                     user="ShodanTeam",  # your username
+                     passwd="Sh0d@n7e",  # your password
+                     db="shodan",
+                     charset='utf8',
+                     cursorclass=pymysql.cursors.DictCursor,
+                     autocommit=True)  # name of the data base
 
 nvddb = pymysql.connect(host="128.196.27.147",  # your host, usually localhost
                      user="ShodanTeam",  # your username
@@ -27,6 +27,7 @@ vulnerablesystems = pymysql.connect(host="128.196.27.147",  # your host, usually
                      charset='utf8',
                      cursorclass=pymysql.cursors.DictCursor,
                      autocommit=True)  # name of the data base
+
     
 try:
 
@@ -34,31 +35,17 @@ try:
         # Read a single record
         sql = "SELECT `vendor`, `product`, `version` FROM `nvdvuln` WHERE `vendor` like %s or `product` like %s"
         cursornv.execute(sql, ('%power%','%power%',))
-        result = cursornv.fetchone()
-        print(result)
-#        
-#    with shodandb.cursor() as cursorsdb:
-#        # Read a single record
-#        sql = "SELECT `ip_str`, `data` FROM `sy_sfs_scadashodan` WHERE `data` like %s"
-#        cursorsdb.execute(sql, ('%scada%',))
-#        for r in shodandb.fetchall():
-#            print(r)
-#        result = cursorsdb.fetchone()
-#        print(result)
-
-    with vulnerablesystems.cursor() as cursornv:
-        # Read a single record
-        sql = "SELECT `vendor`, `product`, `version` FROM `nvdvuln` WHERE `vendor` like %s or `product` like %s"
-        cursornv.execute(sql, ('%power%','%power%',))
-        result = cursornv.fetchone()
-        print(result)
+        result = cursornv.fetchall()
+        for r in result:
+            print(r)
+        #print(result)
         
-    with vulnerablesystems.cursor() as cursorsdb:
+    with shodandb.cursor() as cursorsdb:
         # Read a single record
         sql = "SELECT `ip_str`, `data` FROM `sy_sfs_scadashodan` WHERE `data` like %s"
         cursorsdb.execute(sql, ('%scada%',))
-        for r in shodandb.fetchall():
-            print(r)
+#        for r in shodandb.fetchall():
+#            print(r)
         result = cursorsdb.fetchone()
         print(result)
 
@@ -72,5 +59,5 @@ try:
 
 finally:
     nvddb.close()
-#    shodandb.close()
+    shodandb.close()
     vulnerablesystems.close()

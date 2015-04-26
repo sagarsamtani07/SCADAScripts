@@ -33,21 +33,23 @@ try:
 
     with nvddb.cursor() as cursornv:
         # Read a single record
-        sql = "SELECT `vendor`, `product`, `version` FROM `nvdvuln` WHERE `vendor` like %s or `product` like %s"
-        cursornv.execute(sql, ('%power%','%power%',))
+        sql = "SELECT `cvd_id`,`vendor`, `product`, `version` FROM `nvdvuln`"
+        cursornv.execute(sql)
         result = cursornv.fetchall()
         for r in result:
-            print(r)
-        #print(result)
-        
+            cvid = r["cvd_id"]
+            vendor = r["cvd_id"]
+            product = r["cvd_id"]
+            version = r["cvd_id"]
+
     with shodandb.cursor() as cursorsdb:
         # Read a single record
         sql = "SELECT `ip_str`, `data` FROM `sy_sfs_scadashodan` WHERE `data` like %s"
         cursorsdb.execute(sql, ('%scada%',))
-#        for r in shodandb.fetchall():
-#            print(r)
-        result = cursorsdb.fetchone()
-        print(result)
+        result = cursorsdb.fetchall()
+        for r in result:
+            cvid = r["ip_str"]
+            vendor = r["data"]
 
     try:
         with vulnerablesystems.cursor() as cursorvs:

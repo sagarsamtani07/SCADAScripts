@@ -3,7 +3,7 @@
 import pymysql
 
 
-db = pymysql.connect(host="128.196.27.147",  # your host, usually localhost
+shodandb = pymysql.connect(host="128.196.27.147",  # your host, usually localhost
                      user="ShodanTeam",  # your username
                      passwd="Sh0d@n7e",  # your password
                      db="shodan",
@@ -11,15 +11,40 @@ db = pymysql.connect(host="128.196.27.147",  # your host, usually localhost
                      cursorclass=pymysql.cursors.DictCursor,
                      autocommit=True)  # name of the data base
 
-cur = db.cursor()
+nvddb = pymysql.connect(host="128.196.27.147",  # your host, usually localhost
+                     user="ShodanTeam",  # your username
+                     passwd="Sh0d@n7e",  # your password
+                     db="nvddb",
+                     charset='utf8',
+                     cursorclass=pymysql.cursors.DictCursor,
+                     autocommit=True)  # name of the data base
+
+vulnerablesystems = pymysql.connect(host="128.196.27.147",  # your host, usually localhost
+                     user="ShodanTeam",  # your username
+                     passwd="Sh0d@n7e",  # your password
+                     db="vulnerablesystems",
+                     charset='utf8',
+                     cursorclass=pymysql.cursors.DictCursor,
+                     autocommit=True)  # name of the data base
 
 try:
 
-    with connection.cursor() as cursor:
+    with shodandb.cursor() as cursor:
         # Read a single record
         sql = "SELECT `ip_str`, `data` FROM `sy_sfs_scadashodan` WHERE `data` like %s"
-        cursor.execute(sql, ('%powerlog%',))
+        cursor.execute(sql, ('%scada%',))
         result = cursor.fetchone()
         print(result)
 finally:
-    connection.close()
+    shodandb.close()
+    
+try:
+
+    with nvddb.cursor() as cursor:
+        # Read a single record
+        sql = "SELECT `vendor`, `product`, `version` FROM `nvdvuln` WHERE `vendor` like %s or `product` like %s"
+        cursor.execute(sql, ('%power%','%power%',))
+        result = cursor.fetchone()
+        print(result)
+finally:
+    nvddb.close()

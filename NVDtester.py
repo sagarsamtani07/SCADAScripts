@@ -5,7 +5,7 @@ import pymysql
 
 
 def str_replace(s):
-    return str(s).replace("_").replace(" ")
+    return str(s).replace("_", " ")
 
 shodandb = pymysql.connect(host="128.196.27.147",  # your host, usually localhost
                      user="ShodanTeam",  # your username

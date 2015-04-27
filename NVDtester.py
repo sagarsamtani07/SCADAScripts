@@ -41,8 +41,8 @@ with open("C:/Users/Gross/Desktop/NVDtesterLogs/log.txt", "w+") as log:
             
         with nvddb.cursor() as cursornv:
             # Read all records from NVD DB
-            sql = "SELECT `cvd_id`,`vendor`, `product`, `version`, `Score` FROM `nvdvuln` where `product` = 'squid' and `version` like '3.%'"
-            #sql = "SELECT `cvd_id`,`vendor`, `product`, `version`, `Score` FROM `nvdvuln` where `cvd_id` like '%2015%' or `cvd_id` like '%2014%' or `cvd_id` like '%2013%' and CHAR_LENGTH(product) > 4"# or `cvd_id` like '%2012%' and CHAR_LENGTH(product) > 4"
+            #sql = "SELECT `cvd_id`,`vendor`, `product`, `version`, `Score` FROM `nvdvuln` where `product` = 'windows_xp'"
+            sql = "SELECT `cvd_id`,`vendor`, `product`, `version`, `Score` FROM `nvdvuln` where `cvd_id` like '%2015%' or `cvd_id` like '%2014%' or `cvd_id` like '%2013%' or `cvd_id` like '%2012%' and CHAR_LENGTH(product) > 4"
             cursornv.execute(sql)
             result = cursornv.fetchall()
             
@@ -71,7 +71,7 @@ with open("C:/Users/Gross/Desktop/NVDtesterLogs/log.txt", "w+") as log:
                         print("executed Shodan cursor on " + ip_str)
                         
                         print(version)
-                        m = re.search("([^(0-9)][^(\.)])(%s)([^(0-9)])"%version, data)
+                        m = re.search("([^(0-9)][^(\.)])(%s)([^0-9])"%version, data)
                         
                         if version == "":
                             try:

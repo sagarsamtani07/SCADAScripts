@@ -60,7 +60,7 @@ with open("C:/Users/Gross/Desktop/NVDtesterLogs/log.txt", "w+") as log:
                 
                 with shodandb.cursor() as cursorsdb:
                     # Read all records from SFS SCADA db
-                    sql = "SELECT `ID`,`ip_str`, `data` FROM `sy_sfs_scadashodan` WHERE `data` like %s"
+                    sql = "SELECT `ID`,`ip_str`, `data` FROM `sy_sfs_scadashodan` WHERE MATCH (`data`) AGAINST (%s)"
                     cursorsdb.execute(sql, (datatest,))
                     result2 = cursorsdb.fetchall()
 

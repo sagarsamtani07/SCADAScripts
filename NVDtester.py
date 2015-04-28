@@ -52,7 +52,7 @@ with open("C:/Users/Gross/Desktop/NVDtesterLogs/log.txt", "w+") as log:
             sql = """SELECT `cvd_id`,`vendor`, `product`, `version`, `Score` FROM `nvdvuln`
                      WHERE `cvd_id` LIKE '%2015%' OR `cvd_id` LIKE '%2014%'
                      OR `cvd_id` LIKE '%2013%' OR `cvd_id` LIKE '%2012%'
-                     AND CHAR_LENGTH(product) > 4;"""
+                     AND `CHAR_LENGTH`(`product`)>'4';"""
             cursornv.execute(sql)
             result = cursornv.fetchall()
             

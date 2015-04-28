@@ -10,6 +10,9 @@ def str_replace(s):
 def str_replaceteststr(d):
     return str(d).replace(".", "\\.")
 
+def str_replaceprod(p):
+    return str(p).replace("_", ".").replace("/", ".").replace("\\", ".").replace("-", ".").replace(" ", ".")
+
 shodandb = pymysql.connect(host="128.196.27.147",  # your host, usually localhost
                      user="ShodanTeam",  # your username
                      passwd="Sh0d@n7e",  # your password
@@ -60,7 +63,7 @@ with open("C:/Users/Gross/Desktop/NVDtesterLogs/log.txt", "w+") as log:
                 
                 with shodandb.cursor() as cursorsdb:
                     # Read all records from SFS SCADA db
-                    sql = "SELECT `ID`,`ip_str`, `data` FROM `sy_sfs_scadashodan` WHERE MATCH (`data`) AGAINST (%s)"
+                    sql = "SELECT `ID`,`ip_str`, `data` FROM `sy_sfs_scadashodan` WHERE `data` like %s"
                     cursorsdb.execute(sql, (datatest,))
                     result2 = cursorsdb.fetchall()
 
@@ -72,6 +75,11 @@ with open("C:/Users/Gross/Desktop/NVDtesterLogs/log.txt", "w+") as log:
                         
                         print(version)
                         m = re.search("([^(0-9)][^(\.)])(%s)([^0-9])"%version, data)
+
+                        newprod = str_replaceprod(product)
+                        print(newprod)
+                                                              
+                        l = re.search("(%s)"%newprod, data)
                         
                         if version == "":
                             try:
@@ -85,7 +93,7 @@ with open("C:/Users/Gross/Desktop/NVDtesterLogs/log.txt", "w+") as log:
                                     log.write("Unsolved exception: {0}, at CVID {1}, ip {2}\n".format(err, cvid, ip_str))
                                     log.flush()
 
-                        if m:
+                        if m and l:
                             try:
                                 with vulnerablesystems.cursor() as cursorvs:
                                     # Create a new record in Vulnerable systems

@@ -81,7 +81,7 @@ with open("C:/Users/Gross/Desktop/NVDtesterLogs/log.txt", "w+") as log:
                         print("executed Shodan cursor on " + ip_str)
                         
                         print(version)
-                        m = re.search("([^(0-9)][^(\.)])(%s)([^0-9])" % version, data)
+                        m = re.search("[^0-9][^.](%s)[^0-9]" % version, data)
 
                         newprod = str_replaceprod(product)
                         print(newprod)

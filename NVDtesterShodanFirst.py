@@ -41,46 +41,43 @@ vulnerablesystems = pymysql.connect(host="128.196.27.147",  # your host, usually
 with open("C:/Users/Gross/Desktop/NVDtesterLogs/log.txt", "w+") as log:
 
     try:  
-            
-        with nvddb.cursor() as cursornv:
-            # Read all records from NVD DB
-            #sql = "SELECT `cvd_id`,`vendor`, `product`, `version`, `Score` FROM `nvdvuln` where `product` = 'windows_xp'"
-            sql = "SELECT `cvd_id`,`vendor`, `product`, `version`, `Score` FROM `nvdvuln` where `cvd_id` like '%2015%' or `cvd_id` like '%2014%' or `cvd_id` like '%2013%' or `cvd_id` like '%2012%' and CHAR_LENGTH(product) > 4"
-            cursornv.execute(sql) 
-            result = cursornv.fetchall()
-            
-            for r in result:
-                cvid = r["cvd_id"]
-                vendor = r["vendor"]
-                product = r["product"]
-                versorig = r["version"]
-                version = str_replace(versorig)
-                score = r["Score"]
-                
-                datatest = "%" + product + "%" + version + "%"
-                
-                print(datatest)
-                
-                with shodandb.cursor() as cursorsdb:
-                    # Read all records from SFS SCADA db
-                    sql = "SELECT `ID`,`ip_str`, `data` FROM `sy_sfs_scadashodan` WHERE `data` like %s"
-                    cursorsdb.execute(sql, (datatest,))
-                    result2 = cursorsdb.fetchall()
+        
+        with shodandb.cursor() as cursorsdb:
+            # Read all records from SFS SCADA db
+            sql = "SELECT `ID`,`ip_str`, `data` FROM `sy_sfs_scadashodan` WHERE `data` like %s"
+            cursorsdb.execute(sql, (datatest,))
+            result2 = cursorsdb.fetchall()
 
-                    for r in result2:
-                        ShodanID = r["ID"]
-                        ip_str = r["ip_str"]
-                        data = r["data"]
-                        print("executed Shodan cursor on " + ip_str)
+            for r in result2:
+                ShodanID = r["ID"]
+                ip_str = r["ip_str"]
+                data = r["data"]
+        
+                with nvddb.cursor() as cursornv:
+                    # Read all records from NVD DB
+                    #sql = "SELECT `cvd_id`,`vendor`, `product`, `version`, `Score` FROM `nvdvuln` where `product` = 'windows_xp'"
+                    sql = "SELECT distinct `product` FROM `nvdvuln` where CHAR_LENGTH(`product`) > 4"
+                    cursornv.execute(sql) 
+                    result = cursornv.fetchall()
+            
+                    for r in result:
+                        product = r["product"]
                         
-                        print(version)
-                        m = re.search("([^(0-9)][^(\.)])(%s)([^0-9])"%version, data)
-
                         newprod = str_replaceprod(product)
                         print(newprod)
+
+                        l = re.search("[%s]"%newprod, data)
+
+                        if l:
+                            
+                            m = re.search("[^0-9][^.](%s)[^0-9]"%version, data)
+
+                        else:
+                            print("no vulnerable product found")
                                                               
-                        l = re.search("(%s)"%newprod, data)
-                        
+                
+                      print("executed Shodan cursor on " + ip_str)
+                    print(version)  
                         if version == "":
                             try:
                                 with vulnerablesystems.cursor() as cursorvs:

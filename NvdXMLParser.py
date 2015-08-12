@@ -2,6 +2,7 @@ __author__ = 'Hongyi'
 
 import xml.etree.ElementTree as eTree
 import pymysql
+import os
 
 
 def str_replace(s):
@@ -10,7 +11,7 @@ def str_replace(s):
 db = pymysql.connect(host="128.196.27.147",  # your host, usually localhost
                      user="ShodanTeam",  # your username
                      passwd="Sh0d@n7e",  # your password
-                     db="shodan",
+                     db="nvddb",
                      charset='utf8',
                      autocommit=True)  # name of the data base
 
@@ -24,79 +25,82 @@ ns = {'scap-core': "http://scap.nist.gov/schema/scap-core/0.1",
       'cpe-lang': "http://cpe.mitre.org/language/2.0",
       'ns': "http://scap.nist.gov/schema/feed/vulnerability/2.0"}
 
-filename = "nvdcve-2.0-2014"
-tree = eTree.parse("C://NVD/" + filename + ".xml")
-log = open(filename + ".log", "w")
+folder = "C://NVD/"
+filenames = os.listdir(folder)
+for filename in filenames:
+    tree = eTree.parse("C://NVD/" + filename)
+    log = open("nvd.log", "w")
 
-root = tree.getroot()
-entries = tree.findall('ns:entry', ns)
+    root = tree.getroot()
+    entries = tree.findall('ns:entry', ns)
 
-for entry in entries:
-    # get cve_id
-    cve_id = entry.findall('vuln:cve-id', ns)[0].text
+    for entry in entries:
+        # get cve_id
+        cve_id = entry.findall('vuln:cve-id', ns)[0].text
 
-    # get cvss_score
-    try:
-        cvss = entry.findall('vuln:cvss', ns)[0]
-    except IndexError:
-        log.write(cve_id + "\tNo Score\n")
-        log.flush()
-        continue
-    base_metrics = cvss.findall('cvss:base_metrics', ns)[0]
-    cvss_score = base_metrics.findall('cvss:score', ns)[0].text
-
-    # get product
-    product_list = []
-    try:
-        products = entry.findall('vuln:vulnerable-software-list', ns)[0]
-    except IndexError:
-        log.write(cve_id + "\tNo Product\n")
-        log.flush()
-        continue
-
-    for product in products:
-        string_split = product.text.split(":")
+        # get cvss_score
         try:
-            vendor = str_replace(string_split[2]) if not (string_split[2] == "") else None
+            cvss = entry.findall('vuln:cvss', ns)[0]
         except IndexError:
-            vendor = None
-
-        try:
-            product_name = str_replace(string_split[3]) if not (string_split[3] == "") else None
-        except IndexError:
-            product_name = None
-
-        try:
-            version = str_replace(string_split[4]) if not (string_split[4] == "") else None
-        except IndexError:
-            version = None
-
-        try:
-            patch = str_replace(string_split[5]) if not (string_split[5] == "") else None
-        except IndexError:
-            patch = None
-
-        try:
-            platform = str_replace(string_split[6]) if not (string_split[6] == "") else None
-        except IndexError:
-            platform = None
-
-        product_list.append([vendor, product_name, version, patch, platform])
-
-    for item in product_list:
-        sql = """
-        INSERT INTO `nvddb`.`nvdvuln` (
-        `cvd_id`, `vendor`, `product`, `version`, `patch`, `platform`, `score`
-        ) VALUES (
-        '%s', '%s', '%s', '%s', '%s', '%s', '%s'
-        );""" % (cve_id, item[0], item[1], item[2], item[3], item[4], cvss_score)
-
-        # sql = sql.replace("'None'", "null")
-
-        try:
-            cur.execute(sql)
-        except Exception as err:
-            log.write(cve_id + "\t" + str(err) + "\n")
+            log.write(cve_id + "\tNo Score\n")
             log.flush()
+            continue
+        base_metrics = cvss.findall('cvss:base_metrics', ns)[0]
+        cvss_score = base_metrics.findall('cvss:score', ns)[0].text
 
-    print(cve_id + "\tClear!")
+        # get product
+        product_list = []
+        try:
+            products = entry.findall('vuln:vulnerable-software-list', ns)[0]
+        except IndexError:
+            log.write(cve_id + "\tNo Product\n")
+            log.flush()
+            continue
+
+        for product in products:
+            string_split = product.text.split(":")
+            try:
+                vendor = str_replace(string_split[2]) if not (string_split[2] == "") else None
+            except IndexError:
+                vendor = None
+
+            try:
+                product_name = str_replace(string_split[3]) if not (string_split[3] == "") else None
+            except IndexError:
+                product_name = None
+
+            try:
+                version = str_replace(string_split[4]) if not (string_split[4] == "") else None
+            except IndexError:
+                version = None
+
+            try:
+                patch = str_replace(string_split[5]) if not (string_split[5] == "") else None
+            except IndexError:
+                patch = None
+
+            try:
+                platform = str_replace(string_split[6]) if not (string_split[6] == "") else None
+            except IndexError:
+                platform = None
+
+            product_list.append([vendor, product_name, version, patch, platform])
+
+        for item in product_list:
+            sql = """
+            INSERT INTO `nvddb`.`nvdvuln_new` (
+            `cvd_id`, `vendor`, `product`, `version`, `patch`, `platform`, `score`
+            ) VALUES (
+            '%s', '%s', '%s', '%s', '%s', '%s', '%s'
+            );""" % (cve_id, item[0], item[1], item[2], item[3], item[4], cvss_score)
+
+            # sql = sql.replace("'None'", "null")
+
+            try:
+                cur.execute(sql)
+            except Exception as err:
+                log.write(cve_id + "\t" + str(err) + "\n")
+                log.flush()
+
+        print(cve_id + "\tClear!")
+    print(filename + "\tClear!")

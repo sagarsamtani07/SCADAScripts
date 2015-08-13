@@ -27,10 +27,10 @@ ns = {'scap-core': "http://scap.nist.gov/schema/scap-core/0.1",
 
 folder = "C://NVD/"
 filenames = os.listdir(folder)
+log = open("nvd.log", "w")
+
 for filename in filenames:
     tree = eTree.parse("C://NVD/" + filename)
-    log = open("nvd.log", "w")
-
     root = tree.getroot()
     entries = tree.findall('ns:entry', ns)
 

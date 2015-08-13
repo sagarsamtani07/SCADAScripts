@@ -43,7 +43,9 @@ except pymysql.err.IntegrityError as err:
     exit(0)
 
 ip_result = cur_ip.fetchall()
+#ip_result = [("128.196.27.147",1), ("128.196.27.170",2),("10.128.50.165",3), ("74.125.224.81",4)]
 port_result = cur_port.fetchall()
+#port_result = [(80,),(3306,),(102,)]
 for (result) in port_result:
     port_list.append(result[0])
 

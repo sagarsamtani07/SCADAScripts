@@ -41,7 +41,10 @@ vulnerablesystems = pymysql.connect(host="128.196.27.147",  # your host, usually
                                     autocommit=True)  # name of the data base
 
 
-with open("E:/EricGross-PC/Users/Eric/Desktop/log.txt", "w+") as log:
+vuln_dict = {} # {prod_ver: [list of (cvd_id, score)]}}
+prod_ver_dict = {} # {product: [list of versions]}
+
+with open("C:/Users/Gross/Desktop/NVDtesterLogs/log.txt", "w+") as log:
 
     try:  
             
@@ -49,7 +52,7 @@ with open("E:/EricGross-PC/Users/Eric/Desktop/log.txt", "w+") as log:
             # Read all records from NVD DB
             # sql = "SELECT `cvd_id`,`vendor`, `product`, `version`, `Score`
             # FROM `nvdvuln` where `product` = 'windows_xp'"
-            sql = """SELECT distinct `product`, `version` FROM `nvdvuln`
+            sql = """SELECT `cvd_id`,`vendor`, `product`, `version`, `Score` FROM `nvdvuln`
                      WHERE `cvd_id` LIKE '%2015%' OR `cvd_id` LIKE '%2014%'
                      OR `cvd_id` LIKE '%2013%' OR `cvd_id` LIKE '%2012%'
                      AND `CHAR_LENGTH`(`product`)>'4';"""
@@ -57,10 +60,33 @@ with open("E:/EricGross-PC/Users/Eric/Desktop/log.txt", "w+") as log:
             result = cursornv.fetchall()
             
             for r in result:
+                cvid = r["cvd_id"]
+                vendor = r["vendor"]
                 product = r["product"]
                 versorig = r["version"]
                 version = str_replace(versorig)
+                score = r["Score"]
                 
+                # r[0]: cvd_id, r[1]: product, r[2]: version. r[3]: score
+                cvid, product, version, score = r
+                
+                product_version = '_'.join((product, version)) # use _ to concatenate product and version as the key used in vuln_dict
+                
+                if product_version not in vuln_dict:
+                    vuln_dict[product_version] = [(cvd_id, score)] # initialize the item using a list containing a tuple
+                else:
+                    vuln_dict[product_version].append((cvd_id, score)) # otherwise add the tuple to the list
+                
+        
+                if product not in prod_ver_dict:
+                    prod_ver_dict[product] = [version]
+                else:
+                    prod_ver_dict[product].append(version)
+
+        # In this way, when you get a product, you can check all available versions for that product through prod_ver_dict;
+        # With a specific product-version pair, all available vulns can be retrieved through vuln_dict.
+        
+        
                 datatest = "%" + product + "%" + version + "%"
                 
                 print(datatest)
@@ -90,15 +116,15 @@ with open("E:/EricGross-PC/Users/Eric/Desktop/log.txt", "w+") as log:
                                 with vulnerablesystems.cursor() as cursorvs:
                                     # Create a new record in Vulnerable systems
                                     sql = """INSERT INTO `nvdvuln` (
-                                             `ShodanID`, `ipaddr`, `product`,`version`
+                                             `ShodanID`, `ipaddr`, `CVE-ID`, `vendor`,`product`,`version`, `score`
                                              ) VALUES (
-                                             %s, %s, %s, %s
+                                             %s, %s, %s, %s, %s, %s, %s
                                              );"""
-                                    cursorvs.execute(sql, (ShodanID, ip_str, product, versorig))
+                                    cursorvs.execute(sql, (ShodanID, ip_str, cvid, vendor, product, versorig, score))
                                 print("Vulnerable system found!")
-                                print("on " + ip_str)
+                                print(cvid + " on " + ip_str)
                             except Exception as err:
-                                    log.write("Unsolved exception: {0}, ip {1}\n".format(err, ip_str))
+                                    log.write("Unsolved exception: {0}, at CVID {1}, ip {2}\n".format(err, cvid, ip_str))
                                     log.flush()
 
                         if m and l:
@@ -106,15 +132,15 @@ with open("E:/EricGross-PC/Users/Eric/Desktop/log.txt", "w+") as log:
                                 with vulnerablesystems.cursor() as cursorvs:
                                     # Create a new record in Vulnerable systems
                                     sql = """INSERT INTO `nvdvuln` (
-                                             `ShodanID`, `ipaddr`, `product`,`version`
+                                             `ShodanID`, `ipaddr`, `CVE-ID`, `vendor`,`product`,`version`, `score`
                                              ) VALUES (
-                                             %s, %s, %s, %s
+                                             %s, %s, %s, %s, %s, %s, %s
                                              );"""
-                                    cursorvs.execute(sql, (ShodanID, ip_str, product, versorig))
+                                    cursorvs.execute(sql, (ShodanID, ip_str, cvid, vendor, product, versorig, score))
                                 print("Vulnerable system found!")
-                                print("on " + ip_str)
+                                print(cvid + " on " + ip_str)
                             except Exception as err:
-                                    log.write("Unsolved exception: {0}, ip {1}\n".format(err, ip_str))
+                                    log.write("Unsolved exception: {0}, at CVID {1}, ip {2}\n".format(err, cvid, ip_str))
                                     log.flush()
                         else:
                             print("incorrect MySQL version match")

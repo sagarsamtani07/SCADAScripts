@@ -6,6 +6,7 @@ import telnetlib
 import pymysql
 import urllib
 import json
+import sqlite3
 import re
 
 db_10 = pymysql.connect(host="10.128.50.165",  # your host, usually localhost
@@ -38,7 +39,7 @@ def connectTor():
     try:
         sql = "select id, ip_str from shodan_classified_scada where port = 23 and conf >= .8;"
 
-        cur_10.execute(sql)
+        cursor_10.execute(sql)
         
         conn = sqlite3.connect(':memory:')
 
@@ -46,7 +47,7 @@ def connectTor():
         cur_conn.execute("CREATE table data (id text, ip_str text)")
         conn.commit()
 
-        for row in cur_10:
+        for row in cursor_10:
             cur_conn.execute("insert into data(id, ip_str) values ('%s', '%s');" % (row[0], row[1]))
 
         sql2 = "SELECT * FROM passworddb.scadapasswords"

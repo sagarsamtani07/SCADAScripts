@@ -1,5 +1,6 @@
 from fuzzywuzzy import fuzz
 import pymysql
+import time
 
 db_10 = pymysql.connect(host="10.128.50.165",  # your host, usually localhost
                         port=8080,
@@ -9,27 +10,34 @@ db_10 = pymysql.connect(host="10.128.50.165",  # your host, usually localhost
                         charset='utf8',
                         autocommit=True)  # name of the data base
 
+db_128 = pymysql.connect(host="128.196.27.147",  # your host, usually localhost
+                        port=3306,
+                        user="ShodanTeam",  # your username
+                        passwd="Sh0d@n7e",  # your password
+                        db="shodan",
+                        charset='utf8',
+                        autocommit=True)  # name of the data base
 
 def str_replace(s):
     return str(s).replace("\\", "\\\\").replace("'", "\\'")
 
-cursor_10 = db_10.cursor()
+cursor_128 = db_128.cursor()
 cursor_10_write = db_10.cursor()
 
 # sql_count = "select count(*) from test.shodan_classified_scada where conf > 0.995"
 # cursor_10.execute(sql_count)
 # total_records = cursor_10.fetchone()[0]
 
-sql = "select * from test.shodan_classified_scada where conf > 0.995"
-cursor_10.execute(sql)
+sql = "select searchID, ip, portnum, timestamp, devicedata from shodan.scadashodan"
+cursor_128.execute(sql)
 print("Query Succeeded")
-total_records = cursor_10.rowcount
+total_records = cursor_128.rowcount
 print("Will parse " + str(total_records) + " records")
 
 threshold = 50
 cluster_list = []
-sql_log = open("sql_insert.log", "w")
-cluster_log = open("cluster.log", "w")
+sql_log = open("sql_insert2.log", "w")
+cluster_log = open("cluster2.log", "w")
 
 
 def insert_record(rec, clindex):
@@ -44,14 +52,13 @@ def insert_record(rec, clindex):
     port = rec[2]
     timestamp = rec[3]
     data = rec[4]
-    conf = rec[5]
 
     cluster_log.write(str(id) + "\t=>\t" + str(clindex) + "\n")
     cluster_log.flush()
 
-    sql = "INSERT INTO test.clustered_conf_0_995 (id, ip_str, port, timestamp, data, conf, cluster)" \
+    sql = "INSERT INTO test.clustered_scadashodan (id, ip_str, port, timestamp, data, conf, cluster)" \
           "VALUES ('%s', '%s','%s','%s','%s','%s','%s')" % \
-          (id, ip_str, port, timestamp, str_replace(data), conf, clindex)
+          (id, ip_str, port, timestamp, str_replace(data), 0, clindex)
     try:
         cursor_10_write.execute(sql)
     except Exception as e:
@@ -71,10 +78,10 @@ def get_score(s, t):
 
 count = 0
 
-for record in cursor_10:
+for record in cursor_128:
     count += 1
     if count % int(total_records/100) == 0:
-        print("Progress: " + str(count) + "/" + str(total_records))
+        print("Progress: " + str(count) + "/" + str(total_records) + " " + time.strftime("%m/%d %H:%M:%S", time.localtime()))
 
     data = record[4]
     if len(cluster_list) == 0:
